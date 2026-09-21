@@ -1,0 +1,28 @@
+terraform {
+  required_version = ">= 1.5.0"
+
+  backend "gcs" {
+    prefix = "psc-enlb-demo/04-transit-vpc"
+  }
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = ">= 5.30.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = ">= 5.30.0"
+    }
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+}
