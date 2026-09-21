@@ -3,7 +3,7 @@
 # ==============================================================================
 resource "google_compute_network" "client" {
   project                 = var.project_id
-  name                    = var.client_vpc_name
+  name                    = "client-vpc"
   auto_create_subnetworks = false
   routing_mode            = "REGIONAL"
 }
@@ -11,7 +11,7 @@ resource "google_compute_network" "client" {
 resource "google_compute_subnetwork" "client" {
   project                  = var.project_id
   name                     = "client-subnet"
-  ip_cidr_range            = var.client_subnet_cidr
+  ip_cidr_range            = "10.30.1.0/24"
   region                   = var.region
   network                  = google_compute_network.client.id
   private_ip_google_access = true

@@ -3,43 +3,46 @@ resource "random_id" "project_suffix" {
 }
 
 locals {
-  project_id = var.random_project_id ? "${var.project_name}-${random_id.project_suffix.hex}" : var.project_name
+  apis = toset([
+    "cloudresourcemanager.googleapis.com",
+    "compute.googleapis.com",
+    "iam.googleapis.com",
+    "serviceusage.googleapis.com",
+    "storage.googleapis.com",
+    "run.googleapis.com",
+    "dns.googleapis.com",
+    "servicedirectory.googleapis.com",
+    "iap.googleapis.com",
+    "networkservices.googleapis.com",
+    "orgpolicy.googleapis.com",
+    "accesscontextmanager.googleapis.com",
+  ])
 
-  boolean_org_policies = var.relax_org_policies ? toset([
+  boolean_org_policies = toset([
     "compute.disableNestedVirtualization",
     "compute.disableSerialPortAccess",
     "compute.requireOsLogin",
     "compute.requireShieldedVm",
-  ]) : toset([])
+  ])
 
-  list_org_policies = var.relax_org_policies ? toset([
+  list_org_policies = toset([
     "compute.vmExternalIpAccess",
     "compute.vmCanIpForward",
     "iam.allowedPolicyMemberDomains",
-  ]) : toset([])
-
-  iam_members_flattened = flatten([
-    for role, members in var.project_iam_members : [
-      for member in members : {
-        role   = role
-        member = member
-      }
-    ]
   ])
 }
 
 resource "google_project" "project" {
   name                = var.project_name
-  project_id          = local.project_id
-  org_id              = var.folder_id == "" ? var.organization_id : null
-  folder_id           = var.folder_id != "" ? var.folder_id : null
+  project_id          = "${var.project_name}-${random_id.project_suffix.hex}"
+  org_id              = var.organization_id
   billing_account     = var.billing_account
-  auto_create_network = var.auto_create_network
+  auto_create_network = false
   deletion_policy     = "DELETE"
 }
 
 resource "google_project_service" "apis" {
-  for_each           = toset(var.activate_apis)
+  for_each           = local.apis
   project            = google_project.project.project_id
   service            = each.value
   disable_on_destroy = false
@@ -68,17 +71,6 @@ resource "google_project_organization_policy" "list_policies" {
     }
   }
 
-  depends_on = [google_project_service.apis]
-}
-
-resource "google_project_iam_member" "project_members" {
-  for_each = {
-    for item in local.iam_members_flattened : "${item.role}/${item.member}" => item
-  }
-
-  project    = google_project.project.project_id
-  role       = each.value.role
-  member     = each.value.member
   depends_on = [google_project_service.apis]
 }
 

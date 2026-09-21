@@ -10,5 +10,5 @@ output "psc_neg_id" {
 
 output "cloud_armor_policy_name" {
   description = "Name of the Cloud Armor policy attached to the Global Backend Service"
-  value       = var.enable_cloud_armor ? google_compute_security_policy.transit_cloud_armor[0].name : null
+  value       = google_compute_security_policy.transit_cloud_armor.name
 }

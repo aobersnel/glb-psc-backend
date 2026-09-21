@@ -22,18 +22,3 @@ variable "psc_target_service_uri" {
 variable "client_external_nat_ip" {
   type = string
 }
-
-variable "psc_neg_producer_port" {
-  type    = number
-  default = 443
-}
-
-variable "tcp_proxy_header" {
-  type    = string
-  default = "NONE"
-}
-
-variable "enable_cloud_armor" {
-  type    = bool
-  default = true
-}

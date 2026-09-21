@@ -55,11 +55,11 @@ resource "google_compute_forwarding_rule" "producer_ilb_fr" {
   subnetwork            = var.producer_backend_subnet_self_link
 
   # Required when accessed by a Global External Proxy NLB + PSC NEG
-  allow_global_access = var.ilb_allow_global_access
+  allow_global_access = true
 
-  # Single/Explicit ports vs all_ports (if all_ports = true, Consumer PSC NEG must specify producer_port)
-  all_ports = var.ilb_all_ports ? true : null
-  ports     = var.ilb_all_ports ? null : var.ilb_ports
+  # When all_ports = true on the Producer ILB, the Consumer PSC NEG (04-transit-vpc)
+  # must specify psc_data { producer_port = 443 } (otherwise GCP defaults to port 1).
+  all_ports = true
 }
 
 # ==============================================================================
@@ -67,10 +67,10 @@ resource "google_compute_forwarding_rule" "producer_ilb_fr" {
 # ==============================================================================
 resource "google_compute_service_attachment" "producer_psc_service" {
   project               = var.project_id
-  name                  = var.service_attachment_name
+  name                  = "producer-psc-attachment"
   region                = var.region
-  connection_preference = var.connection_preference
-  enable_proxy_protocol = var.enable_proxy_protocol
+  connection_preference = "ACCEPT_AUTOMATIC"
+  enable_proxy_protocol = false
   nat_subnets           = [var.producer_psc_nat_subnet_self_link]
   target_service        = google_compute_forwarding_rule.producer_ilb_fr.id
 }

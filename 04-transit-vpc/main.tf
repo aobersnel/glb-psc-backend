@@ -18,17 +18,15 @@ resource "google_compute_region_network_endpoint_group" "transit_psc_backend_neg
   subnetwork            = var.psc_neg_subnet_self_link
   psc_target_service    = var.psc_target_service_uri
 
-  dynamic "psc_data" {
-    for_each = var.psc_neg_producer_port != null ? [var.psc_neg_producer_port] : []
-    content {
-      producer_port = psc_data.value
-    }
+  # Explicitly set producer_port = 443 because the Producer ILB uses all_ports = true.
+  # Without this block, GCP defaults the PSC NEG destination port to TCP/1.
+  psc_data {
+    producer_port = 443
   }
 }
 
 # Cloud Armor security policy whitelisting the Client VPC static external Cloud NAT IP
 resource "google_compute_security_policy" "transit_cloud_armor" {
-  count   = var.enable_cloud_armor ? 1 : 0
   project = var.project_id
   name    = "transit-cloud-armor"
   type    = "CLOUD_ARMOR"
@@ -65,7 +63,7 @@ resource "google_compute_backend_service" "transit_psc_global_bs" {
   load_balancing_scheme = "EXTERNAL_MANAGED"
   protocol              = "TCP"
   timeout_sec           = 150
-  security_policy       = var.enable_cloud_armor ? google_compute_security_policy.transit_cloud_armor[0].self_link : null
+  security_policy       = google_compute_security_policy.transit_cloud_armor.self_link
 
   backend {
     group = google_compute_region_network_endpoint_group.transit_psc_backend_neg.self_link
@@ -81,7 +79,7 @@ resource "google_compute_target_tcp_proxy" "transit_psc_global_tcp_proxy" {
   project         = var.project_id
   name            = "transit-tcp-proxy"
   backend_service = google_compute_backend_service.transit_psc_global_bs.id
-  proxy_header    = var.tcp_proxy_header
+  proxy_header    = "NONE"
 }
 
 # Define Global Forwarding Rule (EXTERNAL_MANAGED)

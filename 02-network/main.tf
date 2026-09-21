@@ -3,7 +3,7 @@
 # ==============================================================================
 resource "google_compute_network" "transit" {
   project                 = var.project_id
-  name                    = var.transit_vpc_name
+  name                    = "transit-vpc"
   auto_create_subnetworks = false
   routing_mode            = "GLOBAL"
 }
@@ -12,7 +12,7 @@ resource "google_compute_network" "transit" {
 resource "google_compute_subnetwork" "transit_psc_neg" {
   project                  = var.project_id
   name                     = "transit-psc-subnet"
-  ip_cidr_range            = var.transit_psc_neg_subnet_cidr
+  ip_cidr_range            = "10.10.1.0/24"
   region                   = var.region
   network                  = google_compute_network.transit.id
   private_ip_google_access = true
@@ -23,7 +23,7 @@ resource "google_compute_subnetwork" "transit_psc_neg" {
 # ==============================================================================
 resource "google_compute_network" "producer" {
   project                 = var.project_id
-  name                    = var.producer_vpc_name
+  name                    = "producer-vpc"
   auto_create_subnetworks = false
   routing_mode            = "REGIONAL"
 }
@@ -32,7 +32,7 @@ resource "google_compute_network" "producer" {
 resource "google_compute_subnetwork" "producer_backend" {
   project                  = var.project_id
   name                     = "producer-subnet"
-  ip_cidr_range            = var.producer_backend_subnet_cidr
+  ip_cidr_range            = "10.20.1.0/24"
   region                   = var.region
   network                  = google_compute_network.producer.id
   private_ip_google_access = true
@@ -42,7 +42,7 @@ resource "google_compute_subnetwork" "producer_backend" {
 resource "google_compute_subnetwork" "producer_psc_nat" {
   project       = var.project_id
   name          = "producer-psc-subnet"
-  ip_cidr_range = var.producer_psc_nat_subnet_cidr
+  ip_cidr_range = "10.20.2.0/24"
   region        = var.region
   network       = google_compute_network.producer.id
   purpose       = "PRIVATE_SERVICE_CONNECT"
@@ -99,14 +99,13 @@ resource "google_compute_firewall" "producer_allow_hc_and_internal" {
   source_ranges = [
     "35.191.0.0/16",
     "130.211.0.0/22",
-    var.producer_backend_subnet_cidr,
+    google_compute_subnetwork.producer_backend.ip_cidr_range,
   ]
   target_tags = ["producer-vm"]
 }
 
-# Toggleable Firewall Rule: Allow PSC NAT subnet traffic to Producer VM
+# Allow PSC NAT subnet traffic to Producer VM
 resource "google_compute_firewall" "producer_allow_psc_nat" {
-  count   = var.enable_psc_nat_ingress_firewall ? 1 : 0
   project = var.project_id
   name    = "producer-allow-psc"
   network = google_compute_network.producer.name
@@ -116,7 +115,7 @@ resource "google_compute_firewall" "producer_allow_psc_nat" {
     ports    = ["443", "1883", "8883"]
   }
 
-  source_ranges = [var.producer_psc_nat_subnet_cidr]
+  source_ranges = [google_compute_subnetwork.producer_psc_nat.ip_cidr_range]
   target_tags   = ["producer-vm"]
 }
 

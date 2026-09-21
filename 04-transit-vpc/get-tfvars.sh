@@ -14,9 +14,6 @@ transit_vpc_self_link    = "${TRANSIT_VPC}"
 psc_neg_subnet_self_link = "${PSC_NEG_SUBNET}"
 client_external_nat_ip   = "${CLIENT_NAT_IP}"
 psc_target_service_uri   = "${SERVICE_ATTACHMENT}"
-psc_neg_producer_port    = 443
-tcp_proxy_header         = "NONE"
-enable_cloud_armor       = true
 EOF
 
 echo "Wrote 04-transit-vpc/terraform.tfvars"
